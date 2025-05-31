@@ -37,5 +37,19 @@ This project is designed to explore distributed systems, concurrency, and asynch
     | Send Heartbeat | | Send Heartbeat |        | Send Heartbeat |
     +----------------+ +----------------+        +----------------+
 
+```
+---
 
- 
+### 🗂️ Project Directory Structure
+
+```text
+gfs-rust/
+├── Cargo.toml         # Workspace manifest for all crates
+├── Cargo.lock         # Dependency lockfile
+├── crates/
+│   ├── master/        # Master server: handles metadata & chunk mapping
+│   ├── chunk_server/  # Chunk server: stores actual file blocks
+│   ├── client/        # Client: uploads/downloads files, interacts with master
+│   ├── shared/        # Shared data types, messages, serialization logic
+│   └── tests/         # System and integration tests (multi-node simulation)
+```
