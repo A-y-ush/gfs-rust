@@ -1,0 +1,10 @@
+
+[workspace]
+members = [
+    "crates/master",
+    "crates/chunk_server",
+    "crates/client",
+    "crates/shared",
+    "crates/tests"
+]
+resolver = "2"

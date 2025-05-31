@@ -1,0 +1,10 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+shared = { path = "../shared" }
+tokio = { version = "1", features = ["full"] }
+assert_cmd = "2"       # to run cargo binaries
+tempfile = "3"         # for temp files if needed
