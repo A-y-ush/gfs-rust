@@ -1,5 +1,5 @@
 use master::state::ChunkServerState;
-use master::server::start_heartbeat_server;
+use master::server::start_master_server;
 use chunk_server::heartbeat::send_heartbeat_periodically;
 use shared::messages::ChunkID;
 use std::sync::Arc;
@@ -11,13 +11,14 @@ use tokio::time::sleep;
 #[tokio::test]
 async fn test_heartbeat_integration() {
 
-    let state = ChunkServerState::new();
-    let addr: SocketAddr = "127.0.0.1:9010".parse().unwrap(); 
 
-    let state_clone = state.clone();
-    let state_arc =  Arc::new(state_clone);
+    let addr: SocketAddr = "127.0.0.1:9010".parse().unwrap(); 
+    let connection_addr :SocketAddr = "127.0.0.1:5001".parse().unwrap();
+    let state = Arc::new(ChunkServerState::new());
+    let state_clone = state.clone(); // now clone the Arc, not the inner struct
+
     task::spawn(async move {
-        start_heartbeat_server(state_arc).await.unwrap();
+        start_master_server(connection_addr,state_clone).await.unwrap();
     });
 
     sleep(Duration::from_millis(100)).await;
@@ -38,7 +39,7 @@ async fn test_heartbeat_integration() {
 
 
     task::spawn(async move {
-        send_heartbeat_periodically(chunk_server_id.clone(), master_addr,available_chunks).await.unwrap();
+        send_heartbeat_periodically(chunk_server_id.clone(), master_addr,available_chunks,5).await.unwrap();
     });
 
     // Wait for heartbeats to be sent

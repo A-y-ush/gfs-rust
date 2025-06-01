@@ -1,15 +1,17 @@
+use std::net::SocketAddr;
+use rand::{rngs::StdRng, SeedableRng};
 use tokio::net::TcpListener;
-use tokio::io::AsyncReadExt;
-use shared::messages::Heartbeat;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use shared::messages::*;
 use crate::state::ChunkServerState;
+use bincode;
+use rand::seq::IteratorRandom;
 use std::sync::Arc;
 use anyhow::Result;
-use bincode;
-
-/// Starts the TCP server to receive heartbeats from chunk servers.
-pub async fn start_heartbeat_server(state: Arc<ChunkServerState>) -> Result<()> {
-    let listener = TcpListener::bind("0.0.0.0:5000").await?;
-    println!("🟢 Master server listening on port 5000 for heartbeats...");
+use tracing::{ error, info, warn};
+pub async fn start_master_server(addr: SocketAddr, state: Arc<ChunkServerState>) -> Result<()> {
+    let listener = TcpListener::bind(addr).await?;
+    info!("Master server listening on {}", addr);
 
     loop {
         let (mut socket, _) = listener.accept().await?;
@@ -20,24 +22,67 @@ pub async fn start_heartbeat_server(state: Arc<ChunkServerState>) -> Result<()> 
 
             match socket.read(&mut buffer).await {
                 Ok(n) if n > 0 => {
-                    let data = &buffer[..n];
-
-                    match bincode::decode_from_slice::<Heartbeat,_>(
-                        data,
+                    let decode_result = bincode::decode_from_slice::<MasterRequest, _>(
+                        &buffer[..n],
                         bincode::config::standard(),
-                    ) {
-                        Ok((heartbeat, _)) => {
-                            println!("Received heartbeat from {}", heartbeat.server_id);
-                            state.update_heartbeat(heartbeat);
+                    );
+
+                    match decode_result {
+                        Ok((msg, _)) => {
+                            match msg {
+                                MasterRequest::Heartbeat(hb) => {
+                                    info!("Received Heartbeat from {}", hb.server_id);
+                                    state.handle_heartbeat(hb);
+                                }
+
+                                MasterRequest::CreateFile(req) => {
+                                    info!("Received CreateFileRequest for file {}", req.file_id);
+
+                                    let all_servers = state.get_all_server_ids();
+                                    let mut rng = StdRng::from_rng(&mut rand::rng());// Fixed: Proper RNG initialization
+
+                                    let mut assignments = Vec::new();
+
+                                    for i in 0..req.num_chunks {
+                                        let chunk_id = ChunkID {
+                                            file_id: req.file_id.clone(),
+                                            index: i.try_into().unwrap(),
+                                        };
+
+                                        // Pick up to 3 replicas (can be less if fewer servers available)
+                                        let replicas = all_servers
+                                            .iter()
+                                            .cloned()
+                                            .choose_multiple(&mut rng, 3);
+
+                                        assignments.push((chunk_id, replicas));
+                                    }
+
+                                    let response = CreateFileResponse {
+                                        chunk_assginment: assignments,
+                                    };
+
+                                    let encoded = bincode::encode_to_vec(&response, bincode::config::standard())
+                                        .expect("Failed to serialize response");
+                                    if let Err(e) = socket.write_all(&encoded).await {
+                                        error!("Failed to write response: {}", e);
+                                    }
+                                }
+                            }
                         }
-                        Err(e) => eprintln!("Failed to deserialize heartbeat: {:?}", e),
+
+                        Err(e) => {
+                            error!("Failed to decode MasterRequest: {}", e);
+                        }
                     }
                 }
+
                 Ok(_) => {
-                    eprintln!("Received empty message");
+                    warn!("Received empty message");
                 }
+
                 Err(e) => {
-                    eprintln!("Failed to read from socket: {:?}", e);
+                    error!("Error reading from socket: {}", e);
                 }
             }
         });

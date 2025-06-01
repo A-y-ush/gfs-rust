@@ -1,4 +1,4 @@
-use shared::messages::{ChunkID, Heartbeat};
+use shared::messages::{ChunkID, Heartbeat, MasterRequest};
 use tokio::net::TcpStream;
 use bincode;
 use std::error::Error;
@@ -20,15 +20,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ],
     };
 
-    let mut stream = TcpStream::connect("127.0.0.1:5000").await?;
-    println!("✅ Connected to master");
+    // Wrap in MasterRequest enum
+    let msg = MasterRequest::Heartbeat(heartbeat);
+    let encoded = bincode::encode_to_vec(&msg, bincode::config::standard())?;
 
-    let encoded = bincode::encode_to_vec(&heartbeat, bincode::config::standard())?;
+    // Connect to the new master server
+    let mut stream = TcpStream::connect("127.0.0.1:5001").await?;
+    println!("Connected to master");
 
     stream.writable().await?;
     tokio::io::AsyncWriteExt::write_all(&mut stream, &encoded).await?;
-
-    println!("📤 Sent heartbeat to master");
+    println!("📤 Sent heartbeat wrapped in MasterRequest");
 
     Ok(())
 }

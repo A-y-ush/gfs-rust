@@ -10,3 +10,6 @@ tracing = "0.1" # for logging
 anyhow = "1.0" # for error handling
 dashmap = "6.1.0" # for concurrent hashmaps
 bincode = "2.0.1"
+log = "0.4" # for logging
+rand = "0.9.1" # for random number generation
+tracing-subscriber = { version = "0.3", features = ["fmt"] }

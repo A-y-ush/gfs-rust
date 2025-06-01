@@ -39,13 +39,24 @@ pub struct ChunkMetadata {
 }
 
 
-#[derive(Debug,Serialize,Deserialize,Clone,PartialEq,Eq,Hash)]
+#[derive(Debug,Serialize,Deserialize,Clone,PartialEq,Eq,Hash,Encode,Decode)]
 pub struct CreateFileRequest{
     pub file_id:String,
     pub num_chunks: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq )]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq,Encode,Decode )]
 pub struct CreateFileResponse{
     pub chunk_assginment:Vec<(ChunkID, Vec<String>)>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone,Encode,Decode)]
+pub enum MasterRequest {
+    Heartbeat(Heartbeat),
+    CreateFile(CreateFileRequest),
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub enum MasterResponse {
+    CreateFileResponse(CreateFileResponse),
 }
