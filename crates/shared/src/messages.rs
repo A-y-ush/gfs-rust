@@ -24,7 +24,7 @@ pub enum OperationType {
 
 /// Identifies a specific chunk of a file.
 /// Each file is broken into chunks for storage and redundancy.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash,Encode,Decode)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash,Encode,Decode,Default)]
 pub struct ChunkID {
     pub file_id: String,
     pub index: u32,
@@ -36,4 +36,16 @@ pub struct ChunkID {
 pub struct ChunkMetadata {
     pub chunk_id: ChunkID,
     pub servers: Vec<String>,
+}
+
+
+#[derive(Debug,Serialize,Deserialize,Clone,PartialEq,Eq,Hash)]
+pub struct CreateFileRequest{
+    pub file_id:String,
+    pub num_chunks: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq )]
+pub struct CreateFileResponse{
+    pub chunk_assginment:Vec<(ChunkID, Vec<String>)>,
 }

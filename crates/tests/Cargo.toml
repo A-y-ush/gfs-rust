@@ -4,7 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-shared = { path = "../shared" }
+shared = { path = "../shared"}
+master = {path = "../master"}
+chunk_server = { path = "../chunk_server" }
+client = { path = "../client" }
+# For testing purposes, we can use the same dependencies as the other crates
 tokio = { version = "1", features = ["full"] }
 assert_cmd = "2"       # to run cargo binaries
 tempfile = "3"         # for temp files if needed

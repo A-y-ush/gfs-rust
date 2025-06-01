@@ -2,9 +2,11 @@
 name = "master" # or "chunk_server", etc.
 version = "0.1.0"
 edition = "2024"
-
+default-run = "master"
 [dependencies]
 shared = { path = "../shared" }
 tokio = { version = "1", features = ["full"] }
-tracing = "0.1"
-anyhow = "1.0"
+tracing = "0.1" # for logging
+anyhow = "1.0" # for error handling
+dashmap = "6.1.0" # for concurrent hashmaps
+bincode = "2.0.1"
